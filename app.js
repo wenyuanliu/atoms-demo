@@ -177,11 +177,24 @@ function addCart(name,price){window.__cart.push({name,price});document.getElemen
   }
 ];
 
-function mockGenerate(prompt) {
+function mockGenerate(prompt, variant) {
   // 简单延迟模拟流式
   const tpl = MOCK_TEMPLATES.find(t => t.match.test(prompt));
-  const html = tpl ? tpl.html : defaultMockHtml(prompt);
-  return { title: tpl ? tpl.title : '演示模式', html };
+  let html = tpl ? tpl.html : defaultMockHtml(prompt);
+  // 赛马 B 版本：注入深色主题覆盖样式，和 A 拉开差异
+  if (variant === 'b') {
+    html = html.replace('</head>', `<style>
+      body{background:#0f172a !important;color:#e2e8f0 !important}
+      .card,.item,.stat,.list,.col,.box,.menu .grid .item{background:#1e293b !important;color:#e2e8f0 !important}
+      h1,h2,h3,.name,.big{color:#f1f5f9 !important}
+      .price,.num,.row{color:#94a3b8 !important}
+      .cat,.badge{background:#334155 !important;color:#e2e8f0 !important}
+      input,select{background:#0f172a !important;color:#e2e8f0 !important;border-color:#334155 !important}
+      .q,.steps{background:#1e293b !important;border-left-color:#818cf8 !important}
+      .hero{background:linear-gradient(135deg,#1e1b4b,#312e81) !important}
+    </style></head>`);
+  }
+  return { title: tpl ? tpl.title + (variant === 'b' ? '（深色版）' : '') : '演示模式', html };
 }
 function defaultMockHtml(prompt) {
   return `<DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -198,11 +211,11 @@ p{color:#475569;line-height:1.7;margin-bottom:12px;font-size:14px}
 }
 
 // ---------- DeepSeek 调用（流式） ----------
-async function callModel(prompt, prevHtml, onToken) {
+async function callModel(prompt, prevHtml, onToken, variant) {
   const key = getKey();
   if (!key) {
     // Mock：逐字吐
-    const { html } = mockGenerate(prompt);
+    const { html } = mockGenerate(prompt, variant);
     for (let i = 0; i < html.length; i += 8) {
       onToken(html.slice(0, i));
       await new Promise(r => setTimeout(r, 5));
@@ -415,8 +428,8 @@ async function generate(prompt, prevHtml, forceRace) {
       $('#race-preview').classList.remove('hidden');
       $('#preview').classList.add('hidden');
       const [a, b] = await Promise.all([
-        callModel(prompt, prevHtml, ()=>{}),
-        callModel(prompt, prevHtml, ()=>{}),
+        callModel(prompt, prevHtml, ()=>{}, 'a'),
+        callModel(prompt, prevHtml, ()=>{}, 'b'),
       ]);
       $('#race-a').srcdoc = a;
       $('#race-b').srcdoc = b;

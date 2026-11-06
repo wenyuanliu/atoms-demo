@@ -33,8 +33,8 @@
 
 ```bash
 cd atoms-demo
-python3 -m http.server 8000
-# 打开 http://localhost:8000
+python3 -m http.server 8767
+# 打开 http://localhost:8767
 ```
 
 ### 配置 API Key（可选）
