@@ -62,23 +62,6 @@ ${prevHtml}
 // ---------- Mock 生成器（无 Key 兜底） ----------
 const MOCK_TEMPLATES = [
   {
-    match: /待办|看板|todo|任务|项目/,
-    title: '项目看板',
-    html: `<DOCTYPE html><html><head><meta charset="utf-8"><style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;background:#f1f5f9;padding:24px;color:#1e293b}
-h1{margin-bottom:16px} .board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.col{background:#fff;border-radius:12px;padding:12px;min-height:400px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.col h2{font-size:14px;text-transform:uppercase;color:#64748b;margin-bottom:12px;display:flex;justify-content:space-between}
-.card{background:#f8fafc;border-left:3px solid #6366f1;padding:10px 12px;border-radius:6px;margin-bottom:8px;cursor:grab;font-size:14px}
-.card.pri{border-left-color:#ef4444}.card.wip{border-left-color:#f59e0b}.card.done{border-left-color:#10b981;opacity:.6;text-decoration:line-through}
-.add{width:100%;padding:8px;border:1px dashed #cbd5e1;background:transparent;border-radius:6px;cursor:pointer;color:#64748b}
-</style></head><body><h1>📋 项目看板</h1><div class="board">
-<div class="col"><h2>待办 <span>3</span></h2><div class="card pri">设计首页 UI</div><div class="card">写 PRD 文档</div><div class="card">和客户对齐需求</div><button class="add">+ 添加卡片</button></div>
-<div class="col"><h2>进行中 <span>2</span></h2><div class="card wip">搭建前端骨架</div><div class="card wip">对接登录接口</div><button class="add">+ 添加卡片</button></div>
-<div class="col"><h2>已完成 <span>2</span></h2><div class="card done">技术选型评审</div><div class="card done">初始化仓库</div><button class="add">+ 添加卡片</button></div>
-</div></body></html>`
-  },
-  {
     match: /记账|账本|bookkeep|财务|开销/,
     title: '个人记账本',
     html: `<DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -130,19 +113,67 @@ document.getElementById('m').textContent='¥'+m.toFixed(0);document.getElementBy
     html: `<DOCTYPE html><html><head><meta charset="utf-8"><style>
 body{margin:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:monospace}
 canvas{background:#1e293b;border-radius:8px}.bar{margin:12px 0;font-size:18px}
+.overlay{position:absolute;inset:0;background:rgba(15,23,42,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+.overlay h1{font-size:36px;color:#ef4444;margin:0 0 8px}.overlay p{font-size:18px;margin:0 0 20px}
+.overlay button{padding:10px 28px;background:#22c55e;color:#0f172a;border:none;border-radius:999px;font-size:15px;font-weight:700;cursor:pointer}
 </style></head><body><div class="bar">得分: <span id="s">0</span></div><canvas id="c" width="400" height="400"></canvas><div class="bar">方向键控制 · 空格暂停</div>
+<div class="overlay" id="ov"><h1>GAME OVER</h1><p>得分：<span id="fs">0</span></p><button onclick="resetGame()">重新开始</button></div>
 <script>
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');let s=[{x:10,y:10}],d={x:1,y:0},food=rand(),score=0,pause=false,t;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let s,d,food,score,pause,t;
 function rand(){return{x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)}}
+function resetGame(){clearInterval(t);s=[{x:10,y:10}];d={x:1,y:0};food=rand();score=0;pause=false;document.getElementById('s').textContent=0;document.getElementById('ov').style.display='none';t=setInterval(loop,200);}
 document.onkeydown=e=>{if(e.key==' '){pause=!pause;return}
 if(e.key=='ArrowUp'&&d.y!=1)d={x:0,y:-1};if(e.key=='ArrowDown'&&d.y!=-1)d={x:0,y:1};
 if(e.key=='ArrowLeft'&&d.x!=1)d={x:-1,y:0};if(e.key=='ArrowRight'&&d.x!=-1)d={x:1,y:0};};
 function loop(){if(pause)return;const h={x:s[0].x+d.x,y:s[0].y+d.y};
-if(h.x<0||h.x>=20||h.y<0||h.y>=20||s.some(p=>p.x==h.x&&p.y==h.y)){alert('Game Over! 得分 '+score);location.reload();return}
+if(h.x<0||h.x>=20||h.y<0||h.y>=20||s.some(p=>p.x==h.x&&p.y==h.y)){clearInterval(t);document.getElementById('fs').textContent=score;document.getElementById('ov').style.display='flex';return}
 s.unshift(h);if(h.x==food.x&&h.y==food.y){score++;document.getElementById('s').textContent=score;food=rand()}else s.pop();
 ctx.fillStyle='#1e293b';ctx.fillRect(0,0,400,400);ctx.fillStyle='#22c55e';s.forEach(p=>ctx.fillRect(p.x*20,p.y*20,19,19));
 ctx.fillStyle='#ef4444';ctx.fillRect(food.x*20,food.y*20,19,19);}
-t=setInterval(loop,120);<\/script></body></html>`
+resetGame();<\/script></body></html>`
+  },
+  {
+    match: /咖啡|落地页|landing|菜单|预约|咖啡店/,
+    title: '咖啡店落地页',
+    html: `<DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;color:#3f2305}
+.hero{background:linear-gradient(135deg,#3f2305,#6b3410);color:#fff;padding:80px 24px;text-align:center}
+.hero h1{font-size:42px;margin-bottom:12px}.hero p{opacity:.85}
+.menu{max-width:800px;margin:40px auto;padding:0 24px}
+.menu h2{font-size:24px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.item{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.item:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.item .name{font-weight:600;margin-bottom:4px}.item .price{color:#92400e;font-weight:700}
+.item .add{font-size:12px;color:#0d9488;margin-top:8px;display:none}
+.item:hover .add{display:inline}
+.info{max-width:800px;margin:0 auto 40px;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.info .card{background:#fef3c7;border-radius:12px;padding:20px}
+.info h3{font-size:15px;margin-bottom:8px}
+.info p{font-size:13px;color:#78350f;line-height:1.7}
+.cta{text-align:center;padding:60px 24px;background:#fef3c7}
+.cta button{padding:14px 32px;background:#3f2305;color:#fff;border:none;border-radius:999px;font-size:16px;cursor:pointer}
+.cart{position:fixed;bottom:20px;right:20px;background:#0d9488;color:#fff;border-radius:999px;padding:12px 20px;box-shadow:0 4px 16px rgba(0,0,0,.2);cursor:pointer;font-size:14px}
+</style></head><body>
+<div class="hero"><h1>☕ 山间咖啡</h1><p>手冲 · 慢生活 · 从一杯开始</p></div>
+<div class="menu"><h2>今日菜单</h2><div class="grid">
+<div class="item" onclick="addCart('美式',28)"><div class="name">美式</div><div class="price">¥28</div><div class="add">+ 加入</div></div>
+<div class="item" onclick="addCart('拿铁',32)"><div class="name">拿铁</div><div class="price">¥32</div><div class="add">+ 加入</div></div>
+<div class="item" onclick="addCart('燕麦拿铁',36)"><div class="name">燕麦拿铁</div><div class="price">¥36</div><div class="add">+ 加入</div></div>
+<div class="item" onclick="addCart('手冲耶加雪菲',48)"><div class="name">手冲耶加雪菲</div><div class="price">¥48</div><div class="add">+ 加入</div></div>
+<div class="item" onclick="addCart('提拉米苏',38)"><div class="name">提拉米苏</div><div class="price">¥38</div><div class="add">+ 加入</div></div>
+<div class="item" onclick="addCart('可颂',22)"><div class="name">可颂</div><div class="price">¥22</div><div class="add">+ 加入</div></div>
+</div></div>
+<div class="info">
+<div class="card"><h3>🕐 营业时间</h3><p>周一至周五 8:00 - 20:00<br>周六周日 9:00 - 22:00<br>节假日不打烊</p></div>
+<div class="card"><h3>📍 地址</h3><p>深圳南山区华侨城创意园<br>香山村 12 栋 101<br>近地铁侨城东站 B 口</p></div>
+</div>
+<div class="cta"><h2 style="margin-bottom:16px">周末约个咖啡？</h2><button onclick="alert('预约成功！我们会提前为你准备好座位')">立即预约</button></div>
+<div class="cart" id="cart" onclick="alert('购物车：\\n'+(window.__cart||[]).map(i=>i.name+' ¥'+i.price).join('\\n')||'还是空的')">🛒 购物车（0）</div>
+<script>
+window.__cart=[];
+function addCart(name,price){window.__cart.push({name,price});document.getElementById('cart').textContent='🛒 购物车（'+window.__cart.length+'）';}
+<\/script></body></html>`
   }
 ];
 
@@ -150,14 +181,20 @@ function mockGenerate(prompt) {
   // 简单延迟模拟流式
   const tpl = MOCK_TEMPLATES.find(t => t.match.test(prompt));
   const html = tpl ? tpl.html : defaultMockHtml(prompt);
-  return { title: tpl ? tpl.title : '我的应用', html };
+  return { title: tpl ? tpl.title : '演示模式', html };
 }
 function defaultMockHtml(prompt) {
   return `<DOCTYPE html><html><head><meta charset="utf-8"><style>
-body{font-family:-apple-system,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;margin:0}
-.box{text-align:center;padding:40px}.box h1{font-size:36px;margin-bottom:12px}.box p{opacity:.9}
-.badge{display:inline-block;padding:4px 12px;border:1px solid rgba(255,255,255,.4);border-radius:20px;font-size:12px;margin-top:20px}
-</style></head><body><div class="box"><h1>✨ 你的应用</h1><p>"${prompt.replace(/</g,'&lt;')}"</p><div class="badge">Mock 模式 · 配置 API Key 后可生成完整应用</div></div></body></html>`;
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;background:#f0fdfa;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:#134e4a}
+.box{max-width:520px;width:100%;background:#fff;border-radius:20px;padding:40px;box-shadow:0 10px 40px rgba(13,148,136,.1)}
+.icon{font-size:48px;margin-bottom:16px}
+h1{font-size:22px;margin-bottom:12px}
+p{color:#475569;line-height:1.7;margin-bottom:12px;font-size:14px}
+.q{background:#f0fdfa;border-left:3px solid #0d9488;padding:12px 16px;border-radius:8px;margin:16px 0;font-size:14px}
+.steps{background:#f8fafc;border-radius:10px;padding:16px;margin-top:20px;font-size:13px;color:#475569}
+.steps b{color:#0d9488}
+.badge{display:inline-block;padding:4px 12px;background:#ccfbf1;color:#0d9488;border-radius:999px;font-size:12px;margin-bottom:16px}
+</style></head><body><div class="box"><div class="icon">⚡</div><div class="badge">演示模式</div><h1>这是一个演示占位页</h1><div class="q">你的需求："${prompt.replace(/</g,'&lt;')}"</div><p>当前未配置 AI API Key，所以这里展示的是一个示例占位页。</p><p>配上 Key 后，你输入的任何需求都会被 AI 真的生成成可运行的网页应用。</p><div class="steps">配置方法：点右上角 <b>⚙ 设置</b> → 填入 DeepSeek API Key（<a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a> 免费注册）→ 回到这里重新输入需求即可。</div></div></body></html>`;
 }
 
 // ---------- DeepSeek 调用（流式） ----------
@@ -464,9 +501,9 @@ function bind() {
   };
   $('#preview-newtab').onclick = () => {
     if (!currentApp()) return;
-    const w = window.open('', '_blank');
-    w.document.write(currentApp().html);
-    w.document.close();
+    const blob = new Blob([currentApp().html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
   $('#btn-export').onclick = () => {
     if (!currentApp()) return;
