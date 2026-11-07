@@ -35,7 +35,12 @@ const SYS_PROMPT = `你是一个前端应用生成引擎。用户会用中文描
 6. 代码必须能直接在 iframe 里跑起来，不要用伪代码或 TODO。
 7. 如果用户提供了现有代码，你必须在原有基础上做【最小针对性修改】——保留原有功能、布局、交互逻辑完全不变，只改用户要求改的部分。绝对不要重写整个应用，不要重新设计 UI，不要改变数据结构，不要新增用户没要求的功能。`;
 
-function buildUserPrompt(prompt, prevHtml) {
+function buildUserPrompt(prompt, prevHtml, variant) {
+  const colorHint = variant === 'a'
+    ? '\n配色要求：采用浅色、清爽明亮的主题（白色/浅灰背景）。'
+    : variant === 'b'
+      ? '\n配色要求：采用深色、科技感主题（深蓝/深灰背景，浅色文字），与浅色版本形成明显视觉差异。'
+      : '';
   if (prevHtml) {
     return `【重要】下面是用户正在使用的现有应用代码。用户提了一个修改需求，你必须在现有代码基础上做最小改动，不要重写整个应用。
 
@@ -44,7 +49,7 @@ function buildUserPrompt(prompt, prevHtml) {
 修改要求：
 - 保留原有所有功能、布局、交互逻辑完全不变
 - 只做用户要求的修改，不要画蛇添足加新功能
-- 不要重新设计 UI，不要改变配色方案（除非用户明确要求改色）
+- 不要重新设计 UI，不要改变配色方案（除非用户明确要求改色）${colorHint}
 - 输出修改后的完整单文件 HTML
 
 现有应用代码：
@@ -56,7 +61,7 @@ ${prevHtml}
   }
   return `请生成一个这样的网页应用："""${prompt}"""
 
-要求：单文件 HTML，内联 CSS/JS，现代精致 UI，所有功能本地可用。直接输出完整代码。`;
+要求：单文件 HTML，内联 CSS/JS，现代精致 UI，所有功能本地可用。直接输出完整代码。${colorHint}`;
 }
 
 // ---------- Mock 生成器（无 Key 兜底） ----------
@@ -177,22 +182,26 @@ function addCart(name,price){window.__cart.push({name,price});document.getElemen
   }
 ];
 
+// 赛马 B 版本：注入深色主题覆盖样式，和 A 拉开差异
+function injectDarkTheme(html) {
+  return html.replace('</head>', `<style>
+    body{background:#0f172a !important;color:#e2e8f0 !important}
+    .card,.item,.stat,.list,.col,.box,.menu .grid .item{background:#1e293b !important;color:#e2e8f0 !important}
+    h1,h2,h3,.name,.big{color:#f1f5f9 !important}
+    .price,.num,.row{color:#94a3b8 !important}
+    .cat,.badge{background:#334155 !important;color:#e2e8f0 !important}
+    input,select{background:#0f172a !important;color:#e2e8f0 !important;border-color:#334155 !important}
+    .q,.steps{background:#1e293b !important;border-left-color:#818cf8 !important}
+    .hero{background:linear-gradient(135deg,#1e1b4b,#312e81) !important}
+  </style></head>`);
+}
 function mockGenerate(prompt, variant) {
   // 简单延迟模拟流式
   const tpl = MOCK_TEMPLATES.find(t => t.match.test(prompt));
   let html = tpl ? tpl.html : defaultMockHtml(prompt);
   // 赛马 B 版本：注入深色主题覆盖样式，和 A 拉开差异
   if (variant === 'b') {
-    html = html.replace('</head>', `<style>
-      body{background:#0f172a !important;color:#e2e8f0 !important}
-      .card,.item,.stat,.list,.col,.box,.menu .grid .item{background:#1e293b !important;color:#e2e8f0 !important}
-      h1,h2,h3,.name,.big{color:#f1f5f9 !important}
-      .price,.num,.row{color:#94a3b8 !important}
-      .cat,.badge{background:#334155 !important;color:#e2e8f0 !important}
-      input,select{background:#0f172a !important;color:#e2e8f0 !important;border-color:#334155 !important}
-      .q,.steps{background:#1e293b !important;border-left-color:#818cf8 !important}
-      .hero{background:linear-gradient(135deg,#1e1b4b,#312e81) !important}
-    </style></head>`);
+    html = injectDarkTheme(html);
   }
   return { title: tpl ? tpl.title + (variant === 'b' ? '（深色版）' : '') : '演示模式', html };
 }
@@ -229,7 +238,7 @@ async function callModel(prompt, prevHtml, onToken, variant) {
       model: 'deepseek-chat',
       messages: [
         { role: 'system', content: SYS_PROMPT },
-        { role: 'user', content: buildUserPrompt(prompt, prevHtml) }
+        { role: 'user', content: buildUserPrompt(prompt, prevHtml, variant) }
       ],
       stream: true,
       temperature: 0.7,
@@ -260,15 +269,24 @@ async function callModel(prompt, prevHtml, onToken, variant) {
       } catch(e){}
     }
   }
-  return sanitizeHtml(full);
+  let html = sanitizeHtml(full);
+  // 赛马 B 版本同样注入深色覆盖样式，和 A 拉开差异
+  if (variant === 'b') html = injectDarkTheme(html);
+  return html;
 }
 
 function sanitizeHtml(text) {
-  // 去掉可能的 markdown 包裹
   let t = text.trim();
-  t = t.replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/, '');
+  // 去掉所有 markdown 代码围栏
+  t = t.replace(/```(?:html)?/gi, '').replace(/```/g, '');
+  // 从夹带的说明文字里提取完整 HTML 文档（doctype 或 html 标签开头，到 </html> 结束）
+  const doc = t.match(/<!doctype html[\s\S]*<\/html>/i) || t.match(/<html[\s\S]*<\/html>/i);
+  if (doc) {
+    return doc[0].trim();
+  }
+  // 兜底：去掉前后残留的纯说明文字，包一层 HTML
+  t = t.replace(/^[\s\S]*?(?=<body|<div|<h1|<script|<style)/i, '');
   if (!t.toLowerCase().includes('<!doctype')) {
-    // 兜底包一层
     t = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${t}</body></html>`;
   }
   return t;
@@ -427,6 +445,9 @@ async function generate(prompt, prevHtml, forceRace) {
       // 赛马：并行两个
       $('#race-preview').classList.remove('hidden');
       $('#preview').classList.add('hidden');
+      // 先清空上次赛马的残留内容，显示加载占位
+      $('#race-a').srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:14px;font-family:-apple-system,sans-serif;">正在生成版本 A…</div>';
+      $('#race-b').srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:14px;font-family:-apple-system,sans-serif;">正在生成版本 B…</div>';
       const [a, b] = await Promise.all([
         callModel(prompt, prevHtml, ()=>{}, 'a'),
         callModel(prompt, prevHtml, ()=>{}, 'b'),
